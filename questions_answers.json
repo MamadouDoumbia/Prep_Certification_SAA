@@ -1120,10 +1120,15 @@
             {
                 "text": "Increase provisioned throughput for the Lambda function.",
                 "is_correct": false
+            },
+            {
+                "text": "Modify the Lambda function to read from an Amazon Simple Queue Service (Amazon SQS) queue.",
+                "is_correct": true
             }
         ],
         "correct_answers": [
-            "Create an Amazon Simple Queue Service (Amazon SQS) queue, and subscribe it to the SNS topic. "
+            "Create an Amazon Simple Queue Service (Amazon SQS) queue, and subscribe it to the SNS topic. ",
+            "Modify the Lambda function to read from an Amazon Simple Queue Service (Amazon SQS) queue."
         ]
     },
     {

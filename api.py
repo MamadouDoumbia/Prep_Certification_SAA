@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import random  # Importer le module random pour mélanger les questions
 
 # Charger les questions depuis le fichier JSON
 def load_questions():
@@ -18,6 +19,12 @@ def split_into_sessions(questions):
     # Dernière session avec 54 questions
     sessions.append(questions[3 * session_size:])
 
+    return sessions
+
+# Mélanger les questions dans chaque session
+def shuffle_sessions(sessions):
+    for session in sessions:
+        random.shuffle(session)  # Mélanger les questions dans chaque session
     return sessions
 
 # Fonction pour afficher une question avec des boutons radio ou des cases à cocher
@@ -54,6 +61,9 @@ questions = load_questions()
 
 # Diviser les questions en sessions
 sessions = split_into_sessions(questions)
+
+# Mélanger les questions de chaque session
+sessions = shuffle_sessions(sessions)
 
 # Créer une sidebar pour la sélection de session
 session_choice = st.sidebar.radio("Choisir une session", ["Session 1", "Session 2", "Session 3", "Session 4"])
