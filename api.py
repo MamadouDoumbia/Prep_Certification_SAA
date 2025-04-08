@@ -11,7 +11,7 @@ def load_questions():
 def split_into_sessions(questions):
     session_size = 65
     sessions = []
-
+    
     for i in range(3):
         sessions.append(questions[i * session_size:(i + 1) * session_size])
 
