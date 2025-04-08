@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-import random  # Importer le module random pour mélanger les questions
+import random
 
 # Charger les questions depuis le fichier JSON
 def load_questions():
@@ -9,49 +9,54 @@ def load_questions():
 
 # Diviser les questions en 4 sessions
 def split_into_sessions(questions):
-    session_size = 65  # Taille de chaque session sauf la dernière
+    session_size = 65
     sessions = []
 
-    # Diviser en 3 sessions de 65
     for i in range(3):
         sessions.append(questions[i * session_size:(i + 1) * session_size])
 
-    # Dernière session avec 54 questions
     sessions.append(questions[3 * session_size:])
-
     return sessions
 
 # Mélanger les questions dans chaque session
 def shuffle_sessions(sessions):
     for session in sessions:
-        random.shuffle(session)  # Mélanger les questions dans chaque session
+        random.shuffle(session)
     return sessions
 
-# Fonction pour afficher une question avec des boutons radio ou des cases à cocher
-def display_question(question_data, idx):
+# Fonction pour afficher une question et collecter les réponses
+def display_question(question_data, idx, user_answers_store):
     st.write(f"**Question**: {question_data['question']}")
-
     answers = question_data['answers']
     correct_answers = question_data['correct_answers']
 
-    # Si plusieurs bonnes réponses, afficher des cases à cocher
     if len(correct_answers) > 1:
-        user_answers = []
+        # Cases à cocher pour plusieurs réponses correctes
+        selected_answers = []
         for ans in answers:
-            if st.checkbox(ans['text'], key=f"answer_{ans['text']}"):
-                user_answers.append(ans['text'])
+            if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}"):
+                selected_answers.append(ans['text'])
+        user_answers_store[idx] = selected_answers
     else:
-        # Si une seule bonne réponse, afficher des boutons radio
-        user_answers = st.radio("Select your answer:", [ans['text'] for ans in answers], key=f"question_{idx}")
-        user_answers = [user_answers]  # Pour uniformiser la structure (liste même pour une seule réponse)
+        # Boutons radio pour une seule réponse correcte
+        selected_answer = st.radio("Select your answer:", [ans['text'] for ans in answers], key=f"question_{idx}")
+        user_answers_store[idx] = [selected_answer]
 
     # Bouton pour soumettre la réponse et vérifier
     if st.button("Répondre", key=f"submit_{idx}"):
-        # Comparer les réponses de l'utilisateur avec les bonnes réponses
-        if sorted(user_answers) == sorted(correct_answers):
+        if sorted(user_answers_store[idx]) == sorted(correct_answers):
             st.success("Correct!")
         else:
             st.error(f"Incorrect. The correct answers are: {', '.join(correct_answers)}")
+
+# Fonction pour afficher le score à la fin du quiz
+def show_score(user_answers_store, selected_session):
+    correct_count = 0
+    for idx, question_data in enumerate(selected_session):
+        correct_answers = question_data['correct_answers']
+        if sorted(user_answers_store[idx]) == sorted(correct_answers):
+            correct_count += 1
+    st.write(f"**Your final score: {correct_count} out of {len(selected_session)}**")
 
 # Titre de l'application
 st.title("Amazon S3 Question Quiz")
@@ -79,8 +84,15 @@ session_map = {
 # Obtenir les questions de la session choisie
 selected_session = sessions[session_map[session_choice]]
 
+# Dictionnaire pour stocker les réponses de l'utilisateur
+user_answers_store = {}
+
 # Afficher les questions de la session sélectionnée
 for idx, question_data in enumerate(selected_session):
     st.write(f"### Question {idx + 1}")
-    display_question(question_data, idx)
-    st.markdown("---")  # Séparateur entre les questions
+    display_question(question_data, idx, user_answers_store)
+    st.markdown("---")
+
+# Afficher le score à la fin du quiz
+if st.button("Voir le score"):
+    show_score(user_answers_store, selected_session)
