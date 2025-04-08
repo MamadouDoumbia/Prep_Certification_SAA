@@ -21,7 +21,7 @@ def split_into_sessions(questions):
 # Mélanger les questions dans chaque session
 def shuffle_sessions(sessions):
     for session in sessions:
-        random.shuffle(session)
+        random.shuffle(session)  # Mélanger les questions dans chaque session
     return sessions
 
 # Fonction pour afficher une question et collecter les réponses
@@ -31,18 +31,15 @@ def display_question(question_data, idx, user_answers_store):
     correct_answers = question_data['correct_answers']
 
     if len(correct_answers) > 1:
-        # Cases à cocher pour plusieurs réponses correctes
         selected_answers = []
         for ans in answers:
             if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}"):
                 selected_answers.append(ans['text'])
         user_answers_store[idx] = selected_answers
     else:
-        # Boutons radio pour une seule réponse correcte
         selected_answer = st.radio("Select your answer:", [ans['text'] for ans in answers], key=f"question_{idx}")
         user_answers_store[idx] = [selected_answer]
 
-    # Bouton pour soumettre la réponse et vérifier
     if st.button("Répondre", key=f"submit_{idx}"):
         if sorted(user_answers_store[idx]) == sorted(correct_answers):
             st.success("Correct!")
@@ -61,14 +58,20 @@ def show_score(user_answers_store, selected_session):
 # Titre de l'application
 st.title("Amazon S3 Question Quiz")
 
-# Charger les questions
-questions = load_questions()
+# Charger les questions (chargées une seule fois)
+if 'questions' not in st.session_state:
+    questions = load_questions()
+    st.session_state.questions = questions
 
-# Diviser les questions en sessions
-sessions = split_into_sessions(questions)
+# Diviser les questions en sessions (une seule fois)
+if 'sessions' not in st.session_state:
+    sessions = split_into_sessions(st.session_state.questions)
+    st.session_state.sessions = sessions
 
-# Mélanger les questions de chaque session
-sessions = shuffle_sessions(sessions)
+# Mélanger les questions dans chaque session (une seule fois)
+if 'shuffled_sessions' not in st.session_state:
+    shuffled_sessions = shuffle_sessions(st.session_state.sessions)
+    st.session_state.shuffled_sessions = shuffled_sessions
 
 # Créer une sidebar pour la sélection de session
 session_choice = st.sidebar.radio("Choisir une session", ["Session 1", "Session 2", "Session 3", "Session 4"])
@@ -82,7 +85,7 @@ session_map = {
 }
 
 # Obtenir les questions de la session choisie
-selected_session = sessions[session_map[session_choice]]
+selected_session = st.session_state.shuffled_sessions[session_map[session_choice]]
 
 # Dictionnaire pour stocker les réponses de l'utilisateur
 user_answers_store = {}
