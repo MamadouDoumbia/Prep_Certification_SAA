@@ -1,11 +1,19 @@
 import streamlit as st
 import json
 import random
+import time
 
-# Charger les questions depuis le fichier JSON
+# Charger les questions depuis le fichier JSON avec gestion des erreurs
 def load_questions():
-    with open('questions_answers.json', 'r') as file:
-        return json.load(file)
+    try:
+        with open('questions_answers.json', 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        st.error("Le fichier 'questions_answers.json' est introuvable. Veuillez vérifier le chemin.")
+        return []
+    except json.JSONDecodeError:
+        st.error("Erreur lors de la lecture du fichier JSON. Assurez-vous qu'il est correctement formaté.")
+        return []
 
 # Diviser les questions en 4 sessions
 def split_into_sessions(questions):
@@ -40,14 +48,6 @@ def display_question(question_data, idx, user_answers_store):
         selected_answer = st.radio("Select your answer:", [ans['text'] for ans in answers], key=f"question_{idx}")
         user_answers_store[idx] = [selected_answer]
 
-    if st.button("Répondre", key=f"submit_{idx}"):
-        if sorted(user_answers_store[idx]) == sorted(correct_answers):
-            st.success("Correct!")
-        else:
-            incorrect_answers = [ans for ans in user_answers_store[idx] if ans not in correct_answers]
-            missing_answers = [ans for ans in correct_answers if ans not in user_answers_store[idx]]
-            st.error(f"Incorrect. You selected: {', '.join(incorrect_answers)}. You missed: {', '.join(missing_answers)}")
-
 # Fonction pour afficher le score à la fin du quiz
 def show_score(user_answers_store, selected_session):
     correct_count = 0
@@ -68,15 +68,16 @@ st.title("Amazon S3 Question Quiz")
 # Charger les questions (chargées une seule fois)
 if 'questions' not in st.session_state:
     questions = load_questions()
-    st.session_state.questions = questions
+    if questions:  # Si des questions ont été chargées
+        st.session_state.questions = questions
 
 # Diviser les questions en sessions (une seule fois)
-if 'sessions' not in st.session_state:
+if 'sessions' not in st.session_state and 'questions' in st.session_state:
     sessions = split_into_sessions(st.session_state.questions)
     st.session_state.sessions = sessions
 
 # Mélanger les questions dans chaque session (une seule fois)
-if 'shuffled_sessions' not in st.session_state:
+if 'shuffled_sessions' not in st.session_state and 'sessions' in st.session_state:
     shuffled_sessions = shuffle_sessions(st.session_state.sessions)
     st.session_state.shuffled_sessions = shuffled_sessions
 
@@ -108,9 +109,12 @@ for idx, question_data in enumerate(selected_session):
     
     # Afficher la barre de progression
     progress = (answered_questions / total_questions) * 100
+    progress = min(max(progress, 0), 100)  # Garantir que la progression est entre 0 et 100
     st.progress(progress)
     st.markdown("---")
 
-# Afficher le score à la fin du quiz
-if st.button("Voir le score"):
+# Validation que toutes les questions ont été répondues avant d'afficher le score
+if st.button("Voir le score") and len(user_answers_store) == total_questions:
     show_score(user_answers_store, selected_session)
+elif st.button("Voir le score"):
+    st.warning("Veuillez répondre à toutes les questions avant de voir votre score.")
