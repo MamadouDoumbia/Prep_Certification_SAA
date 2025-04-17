@@ -106,3 +106,11 @@ for idx, question_data in enumerate(selected_session):
     display_question(question_data, idx, user_answers_store)
     answered_questions = len(user_answers_store)
     
+    # Afficher la barre de progression
+    progress = (answered_questions / total_questions) * 100
+    st.progress(progress)
+    st.markdown("---")
+
+# Afficher le score à la fin du quiz
+if st.button("Voir le score"):
+    show_score(user_answers_store, selected_session)
