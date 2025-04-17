@@ -1,7 +1,6 @@
 import streamlit as st
 import json
 import random
-import time
 
 # Charger les questions depuis le fichier JSON avec gestion des erreurs
 def load_questions():
@@ -40,13 +39,15 @@ def display_question(question_data, idx, user_answers_store):
 
     if len(correct_answers) > 1:
         selected_answers = []
+        # Lors de l'affichage des cases à cocher, les cases ne sont pas cochées par défaut
         for ans in answers:
-            if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}"):
+            if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}", value=False):  # Pas de valeur par défaut (False)
                 selected_answers.append(ans['text'])
         user_answers_store[idx] = selected_answers
     else:
-        selected_answer = st.radio("Select your answer:", [ans['text'] for ans in answers], key=f"question_{idx}")
-        user_answers_store[idx] = [selected_answer]
+        # Pour une seule réponse, utiliser un bouton radio sans spécifier d'index par défaut
+        selected_answer = st.radio("Sélectionnez votre réponse:", [ans['text'] for ans in answers], key=f"question_{idx}", index=None)  # Pas de valeur par défaut
+        user_answers_store[idx] = [selected_answer] if selected_answer else []
 
 # Fonction pour afficher le score à la fin du quiz
 def show_score(user_answers_store, selected_session):
@@ -59,8 +60,8 @@ def show_score(user_answers_store, selected_session):
     total_questions = len(selected_session)
     percentage = (correct_count / total_questions) * 100
 
-    st.write(f"**Your final score: {correct_count} out of {total_questions}**")
-    st.write(f"**Percentage: {percentage:.2f}%**")
+    st.write(f"**Votre score final : {correct_count} sur {total_questions}**")
+    st.write(f"**Pourcentage : {percentage:.2f}%**")
 
 # Titre de l'application
 st.title("Amazon S3 Question Quiz")
@@ -98,23 +99,45 @@ selected_session = st.session_state.shuffled_sessions[session_map[session_choice
 # Dictionnaire pour stocker les réponses de l'utilisateur
 user_answers_store = {}
 
-# Afficher les questions de la session sélectionnée et la progression
+# Initialiser la barre de progression et le pourcentage
 total_questions = len(selected_session)
 answered_questions = 0
 
+# Afficher la barre de progression et le pourcentage en haut de la page (avant les questions)
+progress = (answered_questions / total_questions)
+progress = max(0, min(progress, 1))  # Assurer que la valeur est entre 0 et 1
+progress_bar = st.progress(progress)  # Afficher la barre de progression
+progress_label = st.empty()  # Création d'un espace vide pour le pourcentage
+
+# Calculer la progression initiale
+progress_label.write(f"**Progression : {progress * 100:.2f}%**")  # Afficher le pourcentage juste à côté
+
+st.markdown("---")  # Ligne séparatrice pour bien séparer la barre de progression des questions
+
+# Afficher les questions de la session sélectionnée
 for idx, question_data in enumerate(selected_session):
     st.write(f"### Question {idx + 1}")
     display_question(question_data, idx, user_answers_store)
-    answered_questions = len(user_answers_store)
-    
-    # Afficher la barre de progression
-    progress = (answered_questions / total_questions) * 100
-    progress = min(max(progress, 0), 100)  # Garantir que la progression est entre 0 et 100
-    st.progress(progress)
-    st.markdown("---")
 
-# Validation que toutes les questions ont été répondues avant d'afficher le score
-if st.button("Voir le score") and len(user_answers_store) == total_questions:
-    show_score(user_answers_store, selected_session)
-elif st.button("Voir le score"):
+    # Bouton "Répondre" sous chaque question
+    if st.button("Répondre", key=f"submit_{idx}"):
+        # Mettre à jour les réponses de l'utilisateur
+        st.write(f"Réponse donnée pour la question {idx + 1}: {user_answers_store[idx]}")
+
+        # Mettre à jour la progression après chaque réponse (sans réafficher le pourcentage sous la question)
+        answered_questions = len(user_answers_store)
+        progress = (answered_questions / total_questions)
+        progress = max(0, min(progress, 1))  # Assurer que la valeur est entre 0 et 1
+        progress_bar.progress(progress)  # Mettre à jour la barre de progression
+
+        # Mettre à jour le pourcentage
+        progress_label.write(f"**Progression : {progress * 100:.2f}%**")  # Réafficher le pourcentage
+
+    st.markdown("---")  # Ligne séparatrice après chaque question
+
+# Afficher le bouton "Voir le score" une seule fois après toutes les questions
+if len(user_answers_store) == total_questions:
+    if st.button("Voir le score"):
+        show_score(user_answers_store, selected_session)
+elif len(user_answers_store) < total_questions:
     st.warning("Veuillez répondre à toutes les questions avant de voir votre score.")
