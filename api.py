@@ -44,7 +44,9 @@ def display_question(question_data, idx, user_answers_store):
         if sorted(user_answers_store[idx]) == sorted(correct_answers):
             st.success("Correct!")
         else:
-            st.error(f"Incorrect. The correct answers are: {', '.join(correct_answers)}")
+            incorrect_answers = [ans for ans in user_answers_store[idx] if ans not in correct_answers]
+            missing_answers = [ans for ans in correct_answers if ans not in user_answers_store[idx]]
+            st.error(f"Incorrect. You selected: {', '.join(incorrect_answers)}. You missed: {', '.join(missing_answers)}")
 
 # Fonction pour afficher le score à la fin du quiz
 def show_score(user_answers_store, selected_session):
@@ -53,7 +55,12 @@ def show_score(user_answers_store, selected_session):
         correct_answers = question_data['correct_answers']
         if sorted(user_answers_store[idx]) == sorted(correct_answers):
             correct_count += 1
-    st.write(f"**Your final score: {correct_count} out of {len(selected_session)}**")
+
+    total_questions = len(selected_session)
+    percentage = (correct_count / total_questions) * 100
+
+    st.write(f"**Your final score: {correct_count} out of {total_questions}**")
+    st.write(f"**Percentage: {percentage:.2f}%**")
 
 # Titre de l'application
 st.title("Amazon S3 Question Quiz")
@@ -90,12 +97,12 @@ selected_session = st.session_state.shuffled_sessions[session_map[session_choice
 # Dictionnaire pour stocker les réponses de l'utilisateur
 user_answers_store = {}
 
-# Afficher les questions de la session sélectionnée
+# Afficher les questions de la session sélectionnée et la progression
+total_questions = len(selected_session)
+answered_questions = 0
+
 for idx, question_data in enumerate(selected_session):
     st.write(f"### Question {idx + 1}")
     display_question(question_data, idx, user_answers_store)
-    st.markdown("---")
-
-# Afficher le score à la fin du quiz
-if st.button("Voir le score"):
-    show_score(user_answers_store, selected_session)
+    answered_questions = len(user_answers_store)
+    
