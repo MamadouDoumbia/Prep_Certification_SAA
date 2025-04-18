@@ -1,0 +1,84 @@
+[33mcommit a067c00fb7c0cf0cad2085c584797069ac289f66[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Fri Apr 18 11:54:49 2025 +0200
+
+    Ajout de la pagination des questions et du message de félicitations selon le score: Ajout des boutons 'Précédent' et 'Suivant' pour naviguer entre les pages de questions
+
+[33mcommit a0b7b658d5ace3f07dfdd91cca9fda538e4ac1e5[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Fri Apr 18 11:48:46 2025 +0200
+
+    Ajout de la pagination des questions et du message de félicitations selon le score
+    
+    - Implémentation de la pagination pour afficher 5 questions par page
+    - Ajout de messages de félicitations, avertissements ou encouragements en fonction du score final
+
+[33mcommit bfff93d35af99f2436382609e6e27957fa8b2fa8[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Thu Apr 17 03:41:38 2025 +0200
+
+    Fix: Correct radio button index handling, prevent default selection and ensure dynamic progress bar updates
+
+[33mcommit 6bd031985599ad86a8a6561679a4fe06f1c02fc8[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Thu Apr 17 02:50:08 2025 +0200
+
+    Fix progress bar error and enhance quiz functionality:
+    - Added error handling for loading the JSON file (FileNotFoundError, JSONDecodeError).
+    - Ensured the progress bar value stays between 0 and 100.
+    - Added validation to ensure all questions are answered before showing the score.
+    - Improved user feedback with warning when score is attempted without answering all questions.
+
+[33mcommit 45466ed4cd1285c19cf1219f25a69b4f4ec1bc2e[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Thu Apr 17 02:44:23 2025 +0200
+
+    Refactorisation du quiz avec ajout du feedback détaillé et de la barre de progression
+
+[33mcommit ff9c5c5b05bdcf6925ff942b981706fb0049023f[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Thu Apr 17 02:40:41 2025 +0200
+
+    Refactorisation du quiz avec ajout du feedback détaillé et de la barre de progression
+
+[33mcommit 6928f130122ed3a2d516e976f8cfdf55ad82cff8[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Tue Apr 8 15:17:14 2025 +0200
+
+    refactor: V2 affichage du resultat et mise en mem des questions de chaque session
+
+[33mcommit 0cf11587b677672b7e513d93ee93693b0e7cea7b[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Tue Apr 8 15:03:47 2025 +0200
+
+    refactor: V2 affichage du resultat et mise en mem des questions de chaque session
+
+[33mcommit d3c9ac2739b94a8682b1c115455b1284356637ad[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Tue Apr 8 14:04:12 2025 +0200
+
+    refactor: affichage du resultat et mise en mem des questions de chaque session
+
+[33mcommit d3d35b2aa563eedfc01ffdbff890fd9cfa2b5140[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Wed Mar 19 15:21:27 2025 +0100
+
+    refactor: mélange des 65 quiz de chaque session une fois la page réactualisée
+
+[33mcommit 069c6abd5484249c3ffdb4a678e44c26557ed108[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Tue Mar 18 19:53:30 2025 +0100
+
+    refactor: Création des sitebare avec des slit de 65 quiz chacun
+
+[33mcommit e66442de89435add88c846f199846476fdbccb56[m
+Author: Mamadou <mamadoubdoumbia@gmail.com>
+Date:   Tue Mar 18 18:27:58 2025 +0100
+
+    Ajout fichier initiaux
+
+[33mcommit 5df4c4c9f1a5f467a7d105a3c7734eee4d2eb8c8[m
+Author: MamadouDoumbia <mamadoubdoumbia@gmail.com>
+Date:   Tue Mar 18 18:19:29 2025 +0100
+
+    Initial commit

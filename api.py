@@ -1,147 +1,110 @@
 import streamlit as st
-import json
-import random
+from questions import load_questions, split_into_sessions, shuffle_sessions
+from quiz import display_question, store_answer
+from score import show_score, update_progress
+import time
 
-# Charger les questions depuis le fichier JSON avec gestion des erreurs
-def load_questions():
-    try:
-        with open('questions_answers.json', 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        st.error("Le fichier 'questions_answers.json' est introuvable. Veuillez vérifier le chemin.")
-        return []
-    except json.JSONDecodeError:
-        st.error("Erreur lors de la lecture du fichier JSON. Assurez-vous qu'il est correctement formaté.")
-        return []
+def main():
+    st.title("Amazon S3 Question Quiz")
 
-# Diviser les questions en 4 sessions
-def split_into_sessions(questions):
-    session_size = 65
-    sessions = []
-    
-    for i in range(3):
-        sessions.append(questions[i * session_size:(i + 1) * session_size])
+    # Choix du mode
+    quiz_mode = st.sidebar.radio("Choisir un mode", ["Réponse immédiate", "Mode réaliste (minuté)"])
 
-    sessions.append(questions[3 * session_size:])
-    return sessions
+    # Charger les questions et préparer les sessions
+    if 'questions' not in st.session_state:
+        st.session_state.questions = load_questions()
 
-# Mélanger les questions dans chaque session
-def shuffle_sessions(sessions):
-    for session in sessions:
-        random.shuffle(session)  # Mélanger les questions dans chaque session
-    return sessions
+    if 'sessions' not in st.session_state and 'questions' in st.session_state:
+        st.session_state.sessions = split_into_sessions(st.session_state.questions)
 
-# Fonction pour afficher une question et collecter les réponses
-def display_question(question_data, idx, user_answers_store):
-    st.write(f"**Question**: {question_data['question']}")
-    answers = question_data['answers']
-    correct_answers = question_data['correct_answers']
+    if 'shuffled_sessions' not in st.session_state and 'sessions' in st.session_state:
+        st.session_state.shuffled_sessions = shuffle_sessions(st.session_state.sessions)
 
-    if len(correct_answers) > 1:
-        selected_answers = []
-        for ans in answers:
-            if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}", value=False):
-                selected_answers.append(ans['text'])
-        user_answers_store[idx] = selected_answers
-    else:
-        selected_answer = st.radio("Sélectionnez votre réponse:", [ans['text'] for ans in answers], key=f"question_{idx}", index=None)
-        user_answers_store[idx] = [selected_answer] if selected_answer else []
+    # Créer une sidebar pour la sélection de session
+    session_choice = st.sidebar.radio("Choisir une session", ["Session 1", "Session 2", "Session 3", "Session 4"])
+    session_map = {
+        "Session 1": 0,
+        "Session 2": 1,
+        "Session 3": 2,
+        "Session 4": 3
+    }
 
-# Fonction pour afficher le score à la fin du quiz
-def show_score(user_answers_store, selected_session):
-    correct_count = 0
-    for idx, question_data in enumerate(selected_session):
-        correct_answers = question_data['correct_answers']
-        if sorted(user_answers_store[idx]) == sorted(correct_answers):
-            correct_count += 1
+    selected_session = st.session_state.shuffled_sessions[session_map[session_choice]]
+
+    # Initialiser le store de réponses de l'utilisateur
+    if 'user_answers_store' not in st.session_state:
+        st.session_state.user_answers_store = {}
+
+    # Si le mode est "Mode réaliste", initialiser le temps de début
+    if quiz_mode == "Mode réaliste (minuté)" and 'start_time' not in st.session_state:
+        st.session_state.start_time = time.time()
+
+    # Calculer le temps restant pour le mode minuté
+    if quiz_mode == "Mode réaliste (minuté)":
+        elapsed_time = time.time() - st.session_state.start_time
+        remaining_time = max(0, 300 - elapsed_time)  # 5 minutes = 300 secondes
+        minutes_left = int(remaining_time // 60)
+        seconds_left = int(remaining_time % 60)
+
+        # Afficher dynamiquement le temps restant
+        time_display = st.empty()  # Créer un conteneur vide pour mettre à jour le temps restant
+        time_display.write(f"Temps restant: {minutes_left}m {seconds_left}s")
+
+        # Si le temps est écoulé, arrêter l'application
+        if remaining_time <= 0:
+            st.warning("Le temps est écoulé !")
+            st.stop()
+
+    # Initialiser la barre de progression dans session_state si non définie
+    if 'progress' not in st.session_state:
+        st.session_state.progress = 0  # Début de la progression à 0%
 
     total_questions = len(selected_session)
-    percentage = (correct_count / total_questions) * 100
 
-    st.write(f"**Votre score final : {correct_count} sur {total_questions}**")
-    st.write(f"**Pourcentage : {percentage:.2f}%**")
+    # Calcul de la progression : nombre de réponses données / nombre total de questions
+    answered_questions = len(st.session_state.user_answers_store)
+    progress = answered_questions / total_questions  # Calcul de la progression en pourcentage
 
-    if percentage >= 80:
-        st.success("Félicitations, vous avez très bien réussi !")
-    elif percentage >= 50:
-        st.warning("Bon travail, mais vous pouvez encore améliorer votre score.")
-    else:
-        st.error("Essayez encore une fois, vous pouvez faire mieux !")
+    # Mettre à jour la barre de progression dans session_state
+    st.session_state.progress = progress  # Mise à jour de la progression dans session_state
+    progress_bar = st.progress(st.session_state.progress)  # Mettre à jour la barre de progression
+    progress_label = st.empty()
 
-# Titre de l'application
-st.title("Amazon S3 Question Quiz")
+    # Afficher la progression en pourcentage
+    progress_label.write(f"**Progression : {st.session_state.progress * 100:.2f}%**")
 
-# Charger les questions (chargées une seule fois)
-if 'questions' not in st.session_state:
-    questions = load_questions()
-    if questions:  # Si des questions ont été chargées
-        st.session_state.questions = questions
+    st.markdown("---")
 
-# Diviser les questions en sessions (une seule fois)
-if 'sessions' not in st.session_state and 'questions' in st.session_state:
-    sessions = split_into_sessions(st.session_state.questions)
-    st.session_state.sessions = sessions
+    # Affichage des questions
+    for idx, question_data in enumerate(selected_session):
+        st.write(f"### Question {idx + 1}")
+        display_question(question_data, idx, st.session_state.user_answers_store)
 
-# Mélanger les questions dans chaque session (une seule fois)
-if 'shuffled_sessions' not in st.session_state and 'sessions' in st.session_state:
-    shuffled_sessions = shuffle_sessions(st.session_state.sessions)
-    st.session_state.shuffled_sessions = shuffled_sessions
+        if st.button("Répondre", key=f"submit_{idx}"):
+            store_answer(st.session_state.user_answers_store, idx, st.session_state.user_answers_store[idx])
 
-# Créer une sidebar pour la sélection de session
-session_choice = st.sidebar.radio("Choisir une session", ["Session 1", "Session 2", "Session 3", "Session 4"])
+            # Si mode "Réponse immédiate", afficher la réponse après chaque question
+            if quiz_mode == "Réponse immédiate":
+                correct_answers = question_data['correct_answers']
+                user_answer = st.session_state.user_answers_store[idx]
+                if sorted(user_answer) == sorted(correct_answers):
+                    st.success("Bonne réponse !")
+                else:
+                    st.error(f"Mauvaise réponse. La bonne réponse est: {', '.join(correct_answers)}")
 
-# Dictionnaire pour lier les sessions aux indices
-session_map = {
-    "Session 1": 0,
-    "Session 2": 1,
-    "Session 3": 2,
-    "Session 4": 3
-}
+            # Mise à jour de la barre de progression après chaque réponse
+            answered_questions = len(st.session_state.user_answers_store)  # Nombre de réponses données
+            update_progress(answered_questions, total_questions, progress_bar, progress_label)  # Mise à jour de la progression
 
-# Obtenir les questions de la session choisie
-selected_session = st.session_state.shuffled_sessions[session_map[session_choice]]
+        st.markdown("---")
 
-# Dictionnaire pour stocker les réponses de l'utilisateur
-user_answers_store = {}
+    # Si toutes les questions sont répondues, afficher le score
+    if len(st.session_state.user_answers_store) == total_questions:
+        if st.button("Voir le score"):
+            show_score(st.session_state.user_answers_store, selected_session)
 
-# Initialiser la barre de progression et le pourcentage
-total_questions = len(selected_session)
-answered_questions = 0
+    elif len(st.session_state.user_answers_store) < total_questions:
+        st.warning("Veuillez répondre à toutes les questions avant de voir votre score.")
 
-# Afficher la barre de progression et le pourcentage en haut de la page
-progress = (answered_questions / total_questions)
-progress = max(0, min(progress, 1))  # Assurer que la valeur est entre 0 et 1
-progress_bar = st.progress(progress)  # Afficher la barre de progression
-progress_label = st.empty()  # Création d'un espace vide pour le pourcentage
-
-# Calculer la progression initiale
-progress_label.write(f"**Progression : {progress * 100:.2f}%**")  # Afficher le pourcentage juste à côté
-
-st.markdown("---")  # Ligne séparatrice
-
-# Afficher toutes les questions
-for idx, question_data in enumerate(selected_session):
-    st.write(f"### Question {idx + 1}")
-    display_question(question_data, idx, user_answers_store)
-
-    # Bouton "Répondre" sous chaque question
-    if st.button("Répondre", key=f"submit_{idx}"):
-        st.write(f"Réponse donnée pour la question {idx + 1}: {user_answers_store[idx]}")
-
-        # Mettre à jour la progression après chaque réponse
-        answered_questions = len(user_answers_store)
-        progress = (answered_questions / total_questions)
-        progress = max(0, min(progress, 1))  # Assurer que la valeur est entre 0 et 1
-        progress_bar.progress(progress)  # Mettre à jour la barre de progression
-
-        # Mettre à jour le pourcentage
-        progress_label.write(f"**Progression : {progress * 100:.2f}%**")  # Réafficher le pourcentage
-
-    st.markdown("---")  # Ligne séparatrice après chaque question
-
-# Afficher le bouton "Voir le score" une seule fois après toutes les questions
-if len(user_answers_store) == total_questions:
-    if st.button("Voir le score"):
-        show_score(user_answers_store, selected_session)
-elif len(user_answers_store) < total_questions:
-    st.warning("Veuillez répondre à toutes les questions avant de voir votre score.")
+if __name__ == "__main__":
+    main()
