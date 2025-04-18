@@ -39,14 +39,12 @@ def display_question(question_data, idx, user_answers_store):
 
     if len(correct_answers) > 1:
         selected_answers = []
-        # Lors de l'affichage des cases à cocher, les cases ne sont pas cochées par défaut
         for ans in answers:
-            if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}", value=False):  # Pas de valeur par défaut (False)
+            if st.checkbox(ans['text'], key=f"answer_{idx}_{ans['text']}", value=False):
                 selected_answers.append(ans['text'])
         user_answers_store[idx] = selected_answers
     else:
-        # Pour une seule réponse, utiliser un bouton radio sans spécifier d'index par défaut
-        selected_answer = st.radio("Sélectionnez votre réponse:", [ans['text'] for ans in answers], key=f"question_{idx}", index=None)  # Pas de valeur par défaut
+        selected_answer = st.radio("Sélectionnez votre réponse:", [ans['text'] for ans in answers], key=f"question_{idx}", index=None)
         user_answers_store[idx] = [selected_answer] if selected_answer else []
 
 # Fonction pour afficher le score à la fin du quiz
@@ -62,6 +60,13 @@ def show_score(user_answers_store, selected_session):
 
     st.write(f"**Votre score final : {correct_count} sur {total_questions}**")
     st.write(f"**Pourcentage : {percentage:.2f}%**")
+
+    if percentage >= 80:
+        st.success("Félicitations, vous avez très bien réussi !")
+    elif percentage >= 50:
+        st.warning("Bon travail, mais vous pouvez encore améliorer votre score.")
+    else:
+        st.error("Essayez encore une fois, vous pouvez faire mieux !")
 
 # Titre de l'application
 st.title("Amazon S3 Question Quiz")
@@ -103,7 +108,7 @@ user_answers_store = {}
 total_questions = len(selected_session)
 answered_questions = 0
 
-# Afficher la barre de progression et le pourcentage en haut de la page (avant les questions)
+# Afficher la barre de progression et le pourcentage en haut de la page
 progress = (answered_questions / total_questions)
 progress = max(0, min(progress, 1))  # Assurer que la valeur est entre 0 et 1
 progress_bar = st.progress(progress)  # Afficher la barre de progression
@@ -112,19 +117,18 @@ progress_label = st.empty()  # Création d'un espace vide pour le pourcentage
 # Calculer la progression initiale
 progress_label.write(f"**Progression : {progress * 100:.2f}%**")  # Afficher le pourcentage juste à côté
 
-st.markdown("---")  # Ligne séparatrice pour bien séparer la barre de progression des questions
+st.markdown("---")  # Ligne séparatrice
 
-# Afficher les questions de la session sélectionnée
+# Afficher toutes les questions
 for idx, question_data in enumerate(selected_session):
     st.write(f"### Question {idx + 1}")
     display_question(question_data, idx, user_answers_store)
 
     # Bouton "Répondre" sous chaque question
     if st.button("Répondre", key=f"submit_{idx}"):
-        # Mettre à jour les réponses de l'utilisateur
         st.write(f"Réponse donnée pour la question {idx + 1}: {user_answers_store[idx]}")
 
-        # Mettre à jour la progression après chaque réponse (sans réafficher le pourcentage sous la question)
+        # Mettre à jour la progression après chaque réponse
         answered_questions = len(user_answers_store)
         progress = (answered_questions / total_questions)
         progress = max(0, min(progress, 1))  # Assurer que la valeur est entre 0 et 1
